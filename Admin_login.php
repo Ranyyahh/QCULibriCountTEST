@@ -1,4 +1,6 @@
 <?php   
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start();
 require_once 'config.php';
 
@@ -8,38 +10,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     function loginAdmin($username, $password) {
         try {
-            $pdo = getDBConnection();
+            $conn = getDBConnection();
             
-            $stmt = $pdo->prepare("SELECT admin_id, username, password FROM admin WHERE username = ?");
-            
-            if (!$stmt) {
-                throw new Exception("Failed to prepare SQL statement");
+            if (!$conn) {
+                throw new Exception("Database connection failed: " . odbc_errormsg());
             }
             
-            $stmt->execute([$username]);
-            $admin = $stmt->fetch();
+            $sql = "SELECT admin_id, username, password FROM admin WHERE username = '$username'";
+            $result = odbc_exec($conn, $sql);
+            
+            if (!$result) {
+                throw new Exception("Query failed: " . odbc_errormsg($conn));
+            }
+            
+            $admin = odbc_fetch_array($result);
             
             if ($admin) {
-                if ($password === $admin['password']) {
-                    $_SESSION['admin_id'] = $admin['admin_id'];
-                    $_SESSION['username'] = $admin['username'];
+                if ($password === $admin['PASSWORD']) {
+                    $_SESSION['admin_id'] = $admin['ADMIN_ID'];
+                    $_SESSION['username'] = $admin['USERNAME'];
                     $_SESSION['admin_logged_in'] = true;
                     
                     session_regenerate_id(true);
+                    odbc_close($conn);
                     return ['success' => true];
                 } else {
+                    odbc_close($conn);
                     return ['success' => false, 'error' => 'password'];
                 }
             } else {
+                odbc_close($conn);
                 return ['success' => false, 'error' => 'username'];
             }
             
-        } catch(PDOException $e) {
-            error_log("Database error in loginAdmin: " . $e->getMessage());
-            return ['success' => false, 'error' => 'database'];
         } catch(Exception $e) {
-            error_log("General error in loginAdmin: " . $e->getMessage());
-            return ['success' => false, 'error' => 'general'];
+            error_log("Database error in loginAdmin: " . $e->getMessage());
+            return ['success' => false, 'error' => 'database', 'message' => $e->getMessage()];
         }
     }
 
@@ -63,17 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'redirect' => 'ADMIN_DASHBOARD.html'
         ]);
     } else {
-        switch ($login_result['error']) {
-            case 'username':
-                $message = "❌ Username not found!";
-                break;
-            case 'password':
-                $message = "❌ Incorrect password!";
-                break;
-            default:
-                $message = "❌ Invalid username or password!";
-                break;
+        $message = "❌ Login failed!";
+        if (isset($login_result['message'])) {
+            $message = "❌ " . $login_result['message'];
+        } elseif ($login_result['error'] === 'username') {
+            $message = "❌ Username not found!";
+        } elseif ($login_result['error'] === 'password') {
+            $message = "❌ Incorrect password!";
         }
+        
         echo json_encode([
             'success' => false,
             'message' => $message
