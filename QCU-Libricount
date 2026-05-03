@@ -1,0 +1,225 @@
+-- =====================================================
+-- QCU LibriCount - Oracle PL/SQL Database Schema
+-- Converted from MySQL to Oracle
+-- =====================================================
+
+-- Drop existing objects (for fresh install)
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE system_logs CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE attendance_logs CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE students CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE system_settings CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE admin CASCADE CONSTRAINTS PURGE';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- Drop sequences
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_admin_id';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_student_id';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_attendance_log_id';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_system_log_id';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_settings_id';
+    EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- =====================================================
+-- CREATE TABLES
+-- =====================================================
+
+-- 1. Admin table
+CREATE TABLE admin (
+    admin_id NUMBER PRIMARY KEY,
+    username VARCHAR2(50) UNIQUE NOT NULL,
+    password VARCHAR2(255) NOT NULL
+);
+
+-- 2. Students table
+CREATE TABLE students (
+    student_id NUMBER PRIMARY KEY,
+    student_number VARCHAR2(20) UNIQUE NOT NULL,
+    firstname VARCHAR2(100) NOT NULL,
+    middlename VARCHAR2(100),
+    lastname VARCHAR2(100) NOT NULL,
+    course VARCHAR2(50),
+    year_level VARCHAR2(20),
+    date_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Attendance logs table
+CREATE TABLE attendance_logs (
+    log_id NUMBER PRIMARY KEY,
+    student_id NUMBER NOT NULL,
+    time_in TIMESTAMP NOT NULL,
+    time_out TIMESTAMP,
+    status VARCHAR2(10) DEFAULT 'inside',
+    session_duration NUMBER,
+    CONSTRAINT chk_status CHECK (status IN ('inside', 'exited', 'timeout')),
+    CONSTRAINT fk_attendance_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+);
+
+-- 4. System logs table
+CREATE TABLE system_logs (
+    log_id NUMBER PRIMARY KEY,
+    action_type VARCHAR2(50) NOT NULL,
+    action_details CLOB,
+    admin_id NUMBER,
+    log_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_syslogs_admin FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE SET NULL
+);
+
+-- 5. System settings table
+CREATE TABLE system_settings (
+    setting_id NUMBER PRIMARY KEY,
+    setting_name VARCHAR2(50) UNIQUE NOT NULL,
+    setting_value VARCHAR2(255) NOT NULL,
+    admin_id NUMBER,
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_settings_admin FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE SET NULL
+);
+
+-- =====================================================
+-- CREATE SEQUENCES (Auto-increment)
+-- =====================================================
+
+CREATE SEQUENCE seq_admin_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_student_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_attendance_log_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_system_log_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_settings_id START WITH 1 INCREMENT BY 1;
+
+-- =====================================================
+-- CREATE TRIGGERS (Auto-increment)
+-- =====================================================
+
+CREATE OR REPLACE TRIGGER trg_admin_id
+BEFORE INSERT ON admin
+FOR EACH ROW
+BEGIN
+    IF :NEW.admin_id IS NULL THEN
+        SELECT seq_admin_id.NEXTVAL INTO :NEW.admin_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_student_id
+BEFORE INSERT ON students
+FOR EACH ROW
+BEGIN
+    IF :NEW.student_id IS NULL THEN
+        SELECT seq_student_id.NEXTVAL INTO :NEW.student_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_attendance_log_id
+BEFORE INSERT ON attendance_logs
+FOR EACH ROW
+BEGIN
+    IF :NEW.log_id IS NULL THEN
+        SELECT seq_attendance_log_id.NEXTVAL INTO :NEW.log_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_system_log_id
+BEFORE INSERT ON system_logs
+FOR EACH ROW
+BEGIN
+    IF :NEW.log_id IS NULL THEN
+        SELECT seq_system_log_id.NEXTVAL INTO :NEW.log_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_settings_id
+BEFORE INSERT ON system_settings
+FOR EACH ROW
+BEGIN
+    IF :NEW.setting_id IS NULL THEN
+        SELECT seq_settings_id.NEXTVAL INTO :NEW.setting_id FROM DUAL;
+    END IF;
+END;
+/
+
+-- =====================================================
+-- INSERT INITIAL DATA
+-- =====================================================
+
+INSERT INTO admin (username, password) VALUES ('admin', 'admin123');
+
+INSERT INTO system_settings (setting_name, setting_value, admin_id) 
+VALUES ('max_capacity', '50', 1);
+
+INSERT INTO students (student_number, firstname, middlename, lastname, course, year_level) VALUES
+('24-1416', 'Franz Remnant', 'Regunda', 'Reyes', 'Computer Science', '2nd Year'),
+('24-1426', 'Jerv Christian', 'Atienza', 'Ganio', 'Information Technology', '3rd Year'), 
+('24-1492', 'Jigger Anne', 'Cabalejo', 'Vizconde', 'College of Engineering', '2nd Year'),
+('24-1502', 'James Samuel', 'Orit', 'Ojeda', 'Information Technology', '4th Year'),
+('24-1433', 'Vincent Martin', 'Torres', 'Canillas', 'Information Technology', '2nd Year'),
+('24-1501', 'Ayesha Mae', 'Gregorio', 'Rosales', 'Information Technology', '3rd Year'),
+('24-1438', 'Elgie Kean', 'Maquiling', 'Vere', 'Information Technology', '1st Year'),
+('24-1486', 'Eunice', 'Pepe', 'Matacubo', 'Information Technology', '2nd Year'),
+('24-1702', 'Alexis Marie', 'Rivera', 'Brecia', 'Information Technology', '1st Year'),
+('24-1462', 'Kurt Adrian', 'Lustereos', 'Uy', 'Information Technology', '4th Year');
+
+COMMIT;
+
+-- =====================================================
+-- CREATE INDEXES
+-- =====================================================
+
+CREATE INDEX idx_attendance_status ON attendance_logs(status);
+CREATE INDEX idx_attendance_time_in ON attendance_logs(time_in);
+CREATE INDEX idx_system_logs_timestamp ON system_logs(log_timestamp);
+
+-- =====================================================
+-- VERIFY
+-- =====================================================
+
+SELECT 'Database successfully converted to Oracle!' AS Status FROM DUAL;
+SELECT COUNT(*) AS Total_Students FROM students;
+SELECT COUNT(*) AS Total_Admin FROM admin; 
+
