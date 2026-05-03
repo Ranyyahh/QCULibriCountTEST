@@ -10,44 +10,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     function loginAdmin($username, $password) {
         try {
-            $conn = getDBConnection();
-            
-            if (!$conn) {
-                throw new Exception("Database connection failed: " . odbc_errormsg());
-            }
-            
-            $sql = "SELECT admin_id, username, password FROM admin WHERE username = '$username'";
-            $result = odbc_exec($conn, $sql);
-            
-            if (!$result) {
-                throw new Exception("Query failed: " . odbc_errormsg($conn));
-            }
-            
-            $admin = odbc_fetch_array($result);
-            
-            if ($admin) {
-                if ($password === $admin['PASSWORD']) {
-                    $_SESSION['admin_id'] = $admin['ADMIN_ID'];
-                    $_SESSION['username'] = $admin['USERNAME'];
-                    $_SESSION['admin_logged_in'] = true;
-                    
-                    session_regenerate_id(true);
-                    odbc_close($conn);
-                    return ['success' => true];
-                } else {
-                    odbc_close($conn);
-                    return ['success' => false, 'error' => 'password'];
-                }
-            } else {
-                odbc_close($conn);
-                return ['success' => false, 'error' => 'username'];
-            }
-            
-        } catch(Exception $e) {
-            error_log("Database error in loginAdmin: " . $e->getMessage());
-            return ['success' => false, 'error' => 'database', 'message' => $e->getMessage()];
+
+        $conn = getDBConnection();
+
+        $sql = "BEGIN admin_login(:u, :p, :r); END;";
+        $stmt = oci_parse($conn, $sql);
+
+        oci_bind_by_name($stmt,":u", $username);
+        oci_bind_by_name($stmt,":p", $password);
+
+        $result = 0;
+
+        oci_bind_by_name($stmt,":r", $result, 32);
+
+
+        oci_execute($stmt);
+
+        if ($result == 1) {
+            $_SESSION['admin_id'] = $username;
+            $_SESSION['username'] = $username;
+            $_SESSION['admin_logged_in'] = true;
+
+            session_regenerate_id(true);
+
+            return ['success' => true];
+        } else {
+            return ['success' => false, 'error' => 'invalid'];
+        }
+
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            return ['success' => false, 'error' => 'database'];
         }
     }
+
 
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
