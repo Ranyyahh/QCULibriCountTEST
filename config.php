@@ -1,17 +1,17 @@
 <?php
-// Oracle Database Configuration - ODBC Version
 
-// Check if session is already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-define('DB_USER', 'system');
-define('DB_PASS', '1234');
-define('DB_DSN', 'QCU_Libricount');  
+define('DB_HOST', 'localhost');        
+define('DB_PORT', '1521');             
+define('DB_SERVICE', 'XE');            
+define('DB_USER', 'libri_user');      
+define('DB_PASS', 'libri_pass');       
 
 function getDBConnection() {
-    $conn = odbc_connect(DB_DSN, DB_USER, DB_PASS);
+    
+    $conn_string = "(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=" . DB_HOST . ")(PORT=" . DB_PORT . "))(CONNECT_DATA=(SERVICE_NAME=" . DB_SERVICE . ")))";
+    
+   
+    $conn = odbc_connect($conn_string, DB_USER, DB_PASS);
     
     if (!$conn) {
         die("Connection failed: " . odbc_errormsg());
@@ -20,20 +20,5 @@ function getDBConnection() {
     return $conn;
 }
 
-// Helper functions
-function executeQuery($conn, $sql) {
-    return odbc_exec($conn, $sql);
-}
-
-function fetchAll($result) {
-    $rows = [];
-    while ($row = odbc_fetch_array($result)) {
-        $rows[] = $row;
-    }
-    return $rows;
-}
-
-function fetchOne($result) {
-    return odbc_fetch_array($result);
-}
+$conn = getDBConnection();
 ?>
