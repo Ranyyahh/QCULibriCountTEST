@@ -1,25 +1,39 @@
 <?php
+// Oracle Database Configuration - ODBC Version
 
-define ('DB_HOST', 'localhost');
-define ('DB_USER', 'root');
-define ('DB_PASS', ''); 
-define ('DB_NAME', 'qculibricount');
+// Check if session is already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+define('DB_USER', 'system');
+define('DB_PASS', '1234');
+define('DB_DSN', 'QCU_Libricount');  
 
 function getDBConnection() {
-    try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-            DB_USER,
-            DB_PASS,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
-            ]
-        );
-        return $pdo;
-    } catch(PDOException $e) {
-        die("Connection failed: " . $e->getMessage());
+    $conn = odbc_connect(DB_DSN, DB_USER, DB_PASS);
+    
+    if (!$conn) {
+        die("Connection failed: " . odbc_errormsg());
     }
+    
+    return $conn;
+}
+
+// Helper functions
+function executeQuery($conn, $sql) {
+    return odbc_exec($conn, $sql);
+}
+
+function fetchAll($result) {
+    $rows = [];
+    while ($row = odbc_fetch_array($result)) {
+        $rows[] = $row;
+    }
+    return $rows;
+}
+
+function fetchOne($result) {
+    return odbc_fetch_array($result);
 }
 ?>
