@@ -1,98 +1,70 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+session_start();
+require_once 'config.php';
+
 header('Content-Type: application/json');
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "QCULibriCount";
-
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    echo json_encode(["error" => "Database connection failed"]);
-    exit();
-}
-
-class Node {
-    public $data;
-    public $next;
-
-    public function __construct($data) {
-        $this->data = $data;
-        $this->next = null;
-    }
-}
-//student linked list
-class Student {
-    public $head = null;
-
-    public function addNode($data) {
-        $newNode = new Node($data);
-
-        if ($this->head === null) {
-            $this->head = $newNode;
-        } else {
-            $current = $this->head;
-            while ($current->next !== null) {
-                $current = $current->next;
-            }
-            $current->next = $newNode;
-        }
-    }
-}
+$conn = getDBConnection();
 
 if (isset($_GET['studentNo']) && !empty($_GET['studentNo'])) {
 
-    $studentNo = $conn->real_escape_string($_GET['studentNo']);
-
+    $studentNo = trim($_GET['studentNo']);
+    
+    // Direct query - exact match
     $sql = "SELECT 
-                firstname AS firstName, 
-                middlename AS middleName, 
-                lastname AS lastName, 
-                course AS course, 
-                year_level AS yearLvl,
-                student_number
-            FROM students";
-
-    $result = $conn->query($sql);
-
-    if ($result->num_rows > 0) {
-
-        $studentList = new Student();
-        while ($row = $result->fetch_assoc()) {
-            $studentList->addNode($row);
-        }
-
-        $studentFound = null;
-        $current = $studentList->head;
-
-        while ($current !== null) {
-            if ($current->data['student_number'] === $studentNo) {
-                $studentFound = [
-                    "firstName" => $current->data['firstName'],
-                    "middleName" => $current->data['middleName'],
-                    "lastName" => $current->data['lastName'],
-                    "course" => $current->data['course'],
-                    "yearLvl" => $current->data['yearLvl']
-                ];
-                break;
-            }
-            $current = $current->next;
-        }
-
-        if ($studentFound) {
-            echo json_encode($studentFound);
-        } else {
-            echo json_encode(["error" => "Student not found"]);
-        }
-
+                firstname, 
+                middlename, 
+                lastname, 
+                course, 
+                year_level
+            FROM students 
+            WHERE student_number = '$studentNo'";
+    
+    error_log("SQL Query: " . $sql);
+    
+    $result = odbc_exec($conn, $sql);
+    
+    if (!$result) {
+        echo json_encode([
+            "error" => "Query execution failed",
+            "sql_error" => odbc_errormsg($conn),
+            "sql" => $sql
+        ]);
+        odbc_close($conn);
+        exit();
+    }
+    
+    if (odbc_fetch_row($result)) {
+        $student = [
+            "firstName" => odbc_result($result, 'FIRSTNAME'),
+            "middleName" => odbc_result($result, 'MIDDLENAME'),
+            "lastName" => odbc_result($result, 'LASTNAME'),
+            "course" => odbc_result($result, 'COURSE'),
+            "yearLvl" => odbc_result($result, 'YEAR_LEVEL')
+        ];
+        echo json_encode($student);
     } else {
-        echo json_encode(["error" => "No students in the database"]);
+        // Subukan kung may kahit anong record sa table
+        $testSql = "SELECT COUNT(*) as total FROM students";
+        $testResult = odbc_exec($conn, $testSql);
+        $totalRecords = 0;
+        if ($testResult && odbc_fetch_row($testResult)) {
+            $totalRecords = odbc_result($testResult, 'TOTAL');
+        }
+        
+        echo json_encode([
+            "error" => "Student not found",
+            "student_number_searched" => $studentNo,
+            "total_records_in_table" => $totalRecords,
+            "hint" => "Make sure the student number exists exactly as in database"
+        ]);
     }
 
 } else {
     echo json_encode(["error" => "Student number not provided"]);
 }
 
-$conn->close();
+odbc_close($conn);
 ?>

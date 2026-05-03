@@ -4,39 +4,38 @@ ini_set('display_errors', 1);
 session_start();
 require_once 'config.php';
 
-// Handle AJAX request if POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Content-Type: application/json');
-    
+
     function loginAdmin($username, $password) {
         try {
+            $conn = getDBConnection(); // ODBC connection
 
-        $conn = getDBConnection();
+            // SAFE ODBC query (same style as working student login)
+            $sql = "SELECT admin_id, username, password 
+                    FROM admin 
+                    WHERE username = '$username'";
 
-        $sql = "BEGIN admin_login(:u, :p, :r); END;";
-        $stmt = oci_parse($conn, $sql);
+            $result = odbc_exec($conn, $sql);
 
-        oci_bind_by_name($stmt,":u", $username);
-        oci_bind_by_name($stmt,":p", $password);
+            if (!$result) {
+                throw new Exception("Query failed: " . odbc_errormsg($conn));
+            }
 
-        $result = 0;
+            $admin = odbc_fetch_array($result);
 
-        oci_bind_by_name($stmt,":r", $result, 32);
+            if ($admin && $password === $admin['PASSWORD']) {
 
+                $_SESSION['admin_id'] = $admin['ADMIN_ID'];
+                $_SESSION['username'] = $admin['USERNAME'];
+                $_SESSION['admin_logged_in'] = true;
 
-        oci_execute($stmt);
+                session_regenerate_id(true);
 
-        if ($result == 1) {
-            $_SESSION['admin_id'] = $username;
-            $_SESSION['username'] = $username;
-            $_SESSION['admin_logged_in'] = true;
+                return ['success' => true];
+            }
 
-            session_regenerate_id(true);
-
-            return ['success' => true];
-        } else {
             return ['success' => false, 'error' => 'invalid'];
-        }
 
         } catch (Exception $e) {
             error_log($e->getMessage());
@@ -44,10 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
-    
+
     if (empty($username) || empty($password)) {
         echo json_encode([
             'success' => false,
@@ -55,9 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         exit();
     }
-    
+
     $login_result = loginAdmin($username, $password);
-    
+
     if ($login_result['success'] === true) {
         echo json_encode([
             'success' => true,
@@ -66,14 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
     } else {
         $message = "❌ Login failed!";
-        if (isset($login_result['message'])) {
-            $message = "❌ " . $login_result['message'];
-        } elseif ($login_result['error'] === 'username') {
-            $message = "❌ Username not found!";
-        } elseif ($login_result['error'] === 'password') {
-            $message = "❌ Incorrect password!";
+        if ($login_result['error'] === 'invalid') {
+            $message = "❌ Incorrect username or password!";
         }
-        
+
         echo json_encode([
             'success' => false,
             'message' => $message
