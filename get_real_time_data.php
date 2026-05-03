@@ -2,68 +2,95 @@
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "QCULibriCount";
+// ORACLE CONNECTION
+$conn = oci_connect('libricount', 'password', 'localhost/XE');
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die(json_encode(["error" => "Connection failed"]));
+if (!$conn) {
+    $e = oci_error();
+    echo json_encode(["error" => $e['message']]);
+    exit;
 }
 
-// Get max capacity
+// ==============================
+// MAX CAPACITY
+// ==============================
 $maxCapacity = 50;
-$result = $conn->query("SELECT setting_value FROM system_settings WHERE setting_name = 'max_capacity'");
-if ($result && $result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $maxCapacity = (int)$row['setting_value'];
+
+$sql = "SELECT setting_value 
+        FROM system_settings 
+        WHERE setting_name = 'max_capacity'";
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
+if ($row = oci_fetch_assoc($stid)) {
+    $maxCapacity = (int)$row['SETTING_VALUE'];
 }
 
-// Get current count
-$sql = "SELECT COUNT(*) as current_count FROM attendance_logs WHERE status = 'inside' AND time_out IS NULL";
-$result = $conn->query($sql);
-$row = $result->fetch_assoc();
-$currentCount = (int)$row['current_count'];
+// ==============================
+// CURRENT COUNT
+// ==============================
+$sql = "SELECT COUNT(*) AS current_count 
+        FROM attendance_logs 
+        WHERE status = 'inside' 
+        AND time_out IS NULL";
 
-// Calculate percentage
-$percentage = ($maxCapacity > 0) ? round(($currentCount / $maxCapacity) * 100) : 0;
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+$row = oci_fetch_assoc($stid);
 
-// Get recent activity (last 12)
-$sql = "SELECT 
-            al.time_in,
-            al.time_out,
-            s.firstname,
-            s.lastname
-        FROM attendance_logs al
-        JOIN students s ON al.student_id = s.student_id
-        ORDER BY al.time_in DESC 
-        LIMIT 12";
-$result = $conn->query($sql);
+$currentCount = (int)$row['CURRENT_COUNT'];
+
+// ==============================
+// PERCENTAGE
+// ==============================
+$percentage = ($maxCapacity > 0) 
+    ? round(($currentCount / $maxCapacity) * 100) 
+    : 0;
+
+// ==============================
+// RECENT ACTIVITY
+// ==============================
+$sql = "
+SELECT * FROM (
+    SELECT 
+        CASE 
+            WHEN al.time_out IS NULL THEN '+1 Entry'
+            ELSE '-1 Entry'
+        END AS type,
+        s.firstname || ' ' || SUBSTR(s.lastname, 1, 1) || '.' AS student,
+        CASE 
+            WHEN al.time_out IS NULL THEN TO_CHAR(al.time_in, 'HH:MI AM')
+            ELSE TO_CHAR(al.time_out, 'HH:MI AM')
+        END AS time,
+        CASE 
+            WHEN al.time_out IS NULL THEN TO_CHAR(al.time_in, 'MM/DD/YY')
+            ELSE TO_CHAR(al.time_out, 'MM/DD/YY')
+        END AS date
+    FROM attendance_logs al
+    JOIN students s ON al.student_id = s.student_id
+    ORDER BY al.time_in DESC
+)
+WHERE ROWNUM <= 12
+";
+
+$stid = oci_parse($conn, $sql);
+oci_execute($stid);
+
 $activities = [];
 
-while($row = $result->fetch_assoc()) {
-    if ($row['time_out'] === null) {
-        // Entry
-        $activities[] = [
-            'type' => '+1 Entry',
-            'student' => $row['firstname'] . ' ' . substr($row['lastname'], 0, 1) . '.',
-            'time' => date('h:i A', strtotime($row['time_in'])),
-            'date' => date('m/d/y', strtotime($row['time_in']))
-        ];
-    } else {
-        // Exit
-        $activities[] = [
-            'type' => '-1 Entry',
-            'student' => $row['firstname'] . ' ' . substr($row['lastname'], 0, 1) . '.',
-            'time' => date('h:i A', strtotime($row['time_out'])),
-            'date' => date('m/d/y', strtotime($row['time_out']))
-        ];
-    }
+while ($row = oci_fetch_assoc($stid)) {
+    $activities[] = [
+        'type' => $row['TYPE'],
+        'student' => $row['STUDENT'],
+        'time' => $row['TIME'],
+        'date' => $row['DATE']
+    ];
 }
 
-// Prepare response
+// ==============================
+// OUTPUT
+// ==============================
 echo json_encode([
     'success' => true,
     'current' => $currentCount,
@@ -73,5 +100,5 @@ echo json_encode([
     'timestamp' => date('Y-m-d H:i:s')
 ]);
 
-$conn->close();
+oci_close($conn);
 ?>
