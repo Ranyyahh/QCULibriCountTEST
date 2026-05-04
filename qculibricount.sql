@@ -1,68 +1,419 @@
-CREATE DATABASE QCULibriCount;
-USE QCULibriCount;
+-- =====================================================
+-- QCU LibriCount - Oracle PL/SQL Database Schema
+-- Converted from MySQL to Oracle
+-- =====================================================
 
-CREATE TABLE admin(
-    admin_id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL
+-- Drop existing objects (for fresh install)
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE system_logs CASCADE CONSTRAINTS PURGE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE attendance_logs CASCADE CONSTRAINTS PURGE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE students CASCADE CONSTRAINTS PURGE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE system_settings CASCADE CONSTRAINTS PURGE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE admin CASCADE CONSTRAINTS PURGE';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- Drop sequences
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_admin_id';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_student_id';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_attendance_log_id';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_system_log_id';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP SEQUENCE seq_settings_id';
+EXCEPTION WHEN OTHERS THEN NULL;
+END;
+/
+
+-- =====================================================
+-- CREATE TABLES
+-- =====================================================
+
+CREATE TABLE admin (
+    admin_id NUMBER PRIMARY KEY,
+    username VARCHAR2(50) UNIQUE NOT NULL,
+    password VARCHAR2(255) NOT NULL
 );
 
-CREATE TABLE students(
-    student_id INT PRIMARY KEY AUTO_INCREMENT,
-    student_number VARCHAR(20) UNIQUE NOT NULL,
-    firstname VARCHAR(100) NOT NULL,
-    middlename VARCHAR(100),
-    lastname VARCHAR(100) NOT NULL,
-    course VARCHAR(50),
-    year_level VARCHAR(20),
+CREATE TABLE students (
+    student_id NUMBER PRIMARY KEY,
+    student_number VARCHAR2(20) UNIQUE NOT NULL,
+    firstname VARCHAR2(100) NOT NULL,
+    middlename VARCHAR2(100),
+    lastname VARCHAR2(100) NOT NULL,
+    course VARCHAR2(50),
+    year_level VARCHAR2(20),
     date_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE attendance_logs(
-    log_id INT PRIMARY KEY AUTO_INCREMENT,
-    student_id INT NOT NULL,
-    time_in DATETIME NOT NULL,
-    time_out DATETIME,
-    status ENUM('inside', 'exited', 'timeout') DEFAULT 'inside',
-    session_duration INT,
-    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
-    INDEX idx_status (status),
-    INDEX idx_time_in (time_in)
+CREATE TABLE attendance_logs (
+    log_id NUMBER PRIMARY KEY,
+    student_id NUMBER NOT NULL,
+    time_in TIMESTAMP NOT NULL,
+    time_out TIMESTAMP,
+    status VARCHAR2(10) DEFAULT 'inside',
+    session_duration NUMBER,
+    CONSTRAINT chk_status CHECK (status IN ('inside', 'exited', 'timeout')),
+    CONSTRAINT fk_attendance_student FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
 );
 
-CREATE TABLE system_logs(
-    log_id INT PRIMARY KEY AUTO_INCREMENT,
-    action_type VARCHAR(50) NOT NULL,
-    action_details TEXT,
-    admin_id INT,
+CREATE TABLE system_logs (
+    log_id NUMBER PRIMARY KEY,
+    action_type VARCHAR2(50) NOT NULL,
+    action_details CLOB,
+    admin_id NUMBER,
     log_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE SET NULL
+    CONSTRAINT fk_syslogs_admin FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE SET NULL
 );
 
 CREATE TABLE system_settings (
-    setting_id INT PRIMARY KEY AUTO_INCREMENT,
-    setting_name VARCHAR(50) UNIQUE NOT NULL,
-    setting_value VARCHAR(255) NOT NULL,
-    admin_id INT,
+    setting_id NUMBER PRIMARY KEY,
+    setting_name VARCHAR2(50) UNIQUE NOT NULL,
+    setting_value VARCHAR2(255) NOT NULL,
+    admin_id NUMBER,
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE SET NULL
+    CONSTRAINT fk_settings_admin FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE SET NULL
 );
 
--- Insert initial data
-INSERT INTO admin (username, password) VALUES
-('admin', 'admin123');
+-- =====================================================
+-- CREATE SEQUENCES
+-- =====================================================
 
-INSERT INTO system_settings (setting_name, setting_value, admin_id) 
+CREATE SEQUENCE seq_admin_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_student_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_attendance_log_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_system_log_id START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_settings_id START WITH 1 INCREMENT BY 1;
+
+-- =====================================================
+-- CREATE TRIGGERS
+-- =====================================================
+
+CREATE OR REPLACE TRIGGER trg_admin_id
+BEFORE INSERT ON admin
+FOR EACH ROW
+BEGIN
+    IF :NEW.admin_id IS NULL THEN
+        SELECT seq_admin_id.NEXTVAL INTO :NEW.admin_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_student_id
+BEFORE INSERT ON students
+FOR EACH ROW
+BEGIN
+    IF :NEW.student_id IS NULL THEN
+        SELECT seq_student_id.NEXTVAL INTO :NEW.student_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_attendance_log_id
+BEFORE INSERT ON attendance_logs
+FOR EACH ROW
+BEGIN
+    IF :NEW.log_id IS NULL THEN
+        SELECT seq_attendance_log_id.NEXTVAL INTO :NEW.log_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_system_log_id
+BEFORE INSERT ON system_logs
+FOR EACH ROW
+BEGIN
+    IF :NEW.log_id IS NULL THEN
+        SELECT seq_system_log_id.NEXTVAL INTO :NEW.log_id FROM DUAL;
+    END IF;
+END;
+/
+
+CREATE OR REPLACE TRIGGER trg_settings_id
+BEFORE INSERT ON system_settings
+FOR EACH ROW
+BEGIN
+    IF :NEW.setting_id IS NULL THEN
+        SELECT seq_settings_id.NEXTVAL INTO :NEW.setting_id FROM DUAL;
+    END IF;
+END;
+/
+
+-- =====================================================
+-- CREATE STORED PROCEDURES
+-- =====================================================
+
+CREATE OR REPLACE PROCEDURE update_capacity_proc (
+    p_capacity IN NUMBER,
+    p_admin_id IN NUMBER
+) AS
+BEGIN
+    IF p_capacity < 1 OR p_capacity > 500 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Capacity must be between 1 and 500.');
+    END IF;
+
+    MERGE INTO system_settings ss
+    USING (SELECT 'max_capacity' AS setting_name FROM DUAL) src
+    ON (ss.setting_name = src.setting_name)
+    WHEN MATCHED THEN
+        UPDATE SET
+            ss.setting_value = TO_CHAR(p_capacity),
+            ss.admin_id = p_admin_id,
+            ss.changed_at = CURRENT_TIMESTAMP
+    WHEN NOT MATCHED THEN
+        INSERT (setting_name, setting_value, admin_id)
+        VALUES ('max_capacity', TO_CHAR(p_capacity), p_admin_id);
+
+    INSERT INTO system_logs (action_type, action_details, admin_id)
+    VALUES (
+        'UPDATE_CAPACITY',
+        'Updated max capacity to ' || p_capacity,
+        p_admin_id
+    );
+
+    COMMIT;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE reset_count_proc (
+    p_admin_id IN NUMBER
+) AS
+    v_students_count NUMBER := 0;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_students_count
+    FROM attendance_logs
+    WHERE status = 'inside'
+    AND time_out IS NULL;
+
+    UPDATE attendance_logs
+    SET
+        time_out = CURRENT_TIMESTAMP,
+        status = 'exited',
+        session_duration = ROUND((CAST(CURRENT_TIMESTAMP AS DATE) - CAST(time_in AS DATE)) * 24 * 60)
+    WHERE status = 'inside'
+    AND time_out IS NULL;
+
+    INSERT INTO system_logs (action_type, action_details, admin_id)
+    VALUES (
+        'RESET_COUNT',
+        'Reset library count - ' || v_students_count || ' students logged out',
+        p_admin_id
+    );
+
+    COMMIT;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE clear_logs_proc (
+    p_admin_id IN NUMBER
+) AS
+    v_logs_count NUMBER := 0;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_logs_count
+    FROM attendance_logs;
+
+    DELETE FROM attendance_logs;
+
+    INSERT INTO system_logs (action_type, action_details, admin_id)
+    VALUES (
+        'CLEAR_LOGS',
+        'Cleared ' || v_logs_count || ' attendance logs',
+        p_admin_id
+    );
+
+    COMMIT;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE get_max_capacity_proc (
+    p_capacity OUT NUMBER
+) AS
+BEGIN
+    SELECT TO_NUMBER(setting_value)
+    INTO p_capacity
+    FROM system_settings
+    WHERE setting_name = 'max_capacity';
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        p_capacity := 50;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE get_current_count_proc (
+    p_count OUT NUMBER
+) AS
+BEGIN
+    SELECT COUNT(*)
+    INTO p_count
+    FROM attendance_logs
+    WHERE status = 'inside'
+    AND time_out IS NULL;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE time_in_student_proc (
+    p_student_number IN VARCHAR2,
+    p_message OUT VARCHAR2
+) AS
+    v_student_id NUMBER;
+    v_active_count NUMBER;
+BEGIN
+    SELECT student_id
+    INTO v_student_id
+    FROM students
+    WHERE student_number = p_student_number;
+
+    SELECT COUNT(*)
+    INTO v_active_count
+    FROM attendance_logs
+    WHERE student_id = v_student_id
+    AND status = 'inside'
+    AND time_out IS NULL;
+
+    IF v_active_count > 0 THEN
+        p_message := 'Student is already inside.';
+        RETURN;
+    END IF;
+
+    INSERT INTO attendance_logs (student_id, time_in, status)
+    VALUES (v_student_id, CURRENT_TIMESTAMP, 'inside');
+
+    p_message := 'Time IN recorded successfully.';
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        p_message := 'Student not found.';
+END;
+/
+
+CREATE OR REPLACE PROCEDURE time_out_student_proc (
+    p_student_number IN VARCHAR2,
+    p_message OUT VARCHAR2
+) AS
+    v_student_id NUMBER;
+    v_log_id NUMBER;
+    v_time_in TIMESTAMP;
+BEGIN
+    SELECT student_id
+    INTO v_student_id
+    FROM students
+    WHERE student_number = p_student_number;
+
+    SELECT log_id, time_in
+    INTO v_log_id, v_time_in
+    FROM (
+        SELECT log_id, time_in
+        FROM attendance_logs
+        WHERE student_id = v_student_id
+        AND status = 'inside'
+        AND time_out IS NULL
+        ORDER BY time_in DESC
+    )
+    WHERE ROWNUM = 1;
+
+    UPDATE attendance_logs
+    SET
+        time_out = CURRENT_TIMESTAMP,
+        status = 'exited',
+        session_duration = ROUND((CAST(CURRENT_TIMESTAMP AS DATE) - CAST(v_time_in AS DATE)) * 24 * 60)
+    WHERE log_id = v_log_id;
+
+    p_message := 'Time OUT recorded successfully.';
+    COMMIT;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        p_message := 'No active Time IN record found.';
+END;
+/
+
+-- =====================================================
+-- INSERT INITIAL DATA
+-- =====================================================
+
+INSERT INTO admin (username, password) VALUES ('admin', 'admin123');
+
+INSERT INTO system_settings (setting_name, setting_value, admin_id)
 VALUES ('max_capacity', '50', 1);
 
-INSERT INTO students (student_number, firstname, middlename, lastname, course, year_level) VALUES
-('24-1416', 'Franz Remnant', 'Regunda', 'Reyes', 'Computer Science', '2nd Year'),
-('24-1426', 'Jerv Christian', 'Atienza', 'Ganio', 'Information Technology', '3rd Year'), 
-('24-1492', 'Jigger Anne', 'Cabalejo', 'Vizconde', 'College of Engineering', '2nd Year'),
-('24-1502', 'James Samuel', 'Orit', 'Ojeda', 'Information Technology', '4th Year'),
-('24-1433', 'Vincent Martin', 'Torres', 'Canillas', 'Information Technology', '2nd Year'),
-('24-1501', 'Ayesha Mae', 'Gregorio', 'Rosales', 'Information Technology', '3rd Year'),
-('24-1438', 'Elgie Kean', 'Maquiling', 'Vere', 'Information Technology', '1st Year'),
-('24-1486', 'Eunice', 'Pepe', 'Matacubo', 'Information Technology', '2nd Year'),
-('24-1702', 'Alexis Marie', 'Rivera', 'Brecia', 'Information Technology', '1st Year'),
-('24-1462', 'Kurt Adrian', 'Lustereos', 'Uy', 'Information Technology', '4th Year')
+INSERT ALL
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1416', 'Franz Remnant', 'Regunda', 'Reyes', 'Computer Science', '2nd Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1426', 'Jerv Christian', 'Atienza', 'Ganio', 'Information Technology', '3rd Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1492', 'Jigger Anne', 'Cabalejo', 'Vizconde', 'College of Engineering', '2nd Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1502', 'James Samuel', 'Orit', 'Ojeda', 'Information Technology', '4th Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1433', 'Vincent Martin', 'Torres', 'Canillas', 'Information Technology', '2nd Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1501', 'Ayesha Mae', 'Gregorio', 'Rosales', 'Information Technology', '3rd Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1438', 'Elgie Kean', 'Maquiling', 'Vere', 'Information Technology', '1st Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1486', 'Eunice', 'Pepe', 'Matacubo', 'Information Technology', '2nd Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1702', 'Alexis Marie', 'Rivera', 'Brecia', 'Information Technology', '1st Year')
+    INTO students (student_number, firstname, middlename, lastname, course, year_level)
+    VALUES ('24-1462', 'Kurt Adrian', 'Lustereos', 'Uy', 'Information Technology', '4th Year')
+SELECT 1 FROM DUAL;
+
+COMMIT;
+
+-- =====================================================
+-- CREATE INDEXES
+-- =====================================================
+
+CREATE INDEX idx_attendance_status ON attendance_logs(status);
+CREATE INDEX idx_attendance_time_in ON attendance_logs(time_in);
+CREATE INDEX idx_system_logs_timestamp ON system_logs(log_timestamp);
+
+-- =====================================================
+-- VERIFY
+-- =====================================================
+
+SELECT 'Database successfully converted to Oracle!' AS status FROM DUAL;
+SELECT COUNT(*) AS total_students FROM students;
+SELECT COUNT(*) AS total_admin FROM admin;

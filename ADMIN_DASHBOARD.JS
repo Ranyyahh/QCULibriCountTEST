@@ -27,17 +27,24 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchRealTimeData() {
         try {
             const response = await fetch(API_URL + '?t=' + new Date().getTime());
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
             const data = await response.json();
+            if (!data.success || !Array.isArray(data.activity)) {
+                throw new Error(data.error || "Invalid dashboard response");
+            }
             
             // Transform the API data to match your expected format
             const transformedData = {
-                percent: data.percentage,
-                current: data.current,
-                max: data.max,
+                percent: Number(data.percentage) || 0,
+                current: Number(data.current) || 0,
+                max: Number(data.max) || 0,
                 activity: data.activity.map(item => ({
-                    type: item.type,
-                    time: item.time,
-                    date: item.date
+                    type: item.type || "",
+                    time: item.time || "",
+                    date: item.date || ""
                 }))
             };
             
@@ -46,25 +53,19 @@ document.addEventListener("DOMContentLoaded", () => {
             
         } catch (error) {
             console.log("Error fetching data, using fallback:", error);
+            const now = new Date();
+            const currentTime = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const currentDate = now.toLocaleDateString();
           
             const placeholderData = {
                 percent: 0,
-                current: 21,
+                current: 0,
                 max: 50,
-                activity: [
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                    { type: "Connection Failed", time: currentTime, date: currentDate },
-                ]
+                activity: Array.from({ length: 12 }, () => ({
+                    type: "Connection Failed",
+                    time: currentTime,
+                    date: currentDate
+                }))
             };
             
             loadDashboard(placeholderData);
@@ -72,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function loadDashboard(data) {
-        const percent = Math.round((data.current / data.max) * 100);
+        const percent = data.max > 0 ? Math.round((data.current / data.max) * 100) : 0;
         document.getElementById("percent").textContent = percent + "%";
         document.getElementById("countNum").textContent = `${data.current}/${data.max}`;
         document.querySelector(".meter").style.strokeDasharray = `${percent}, 100`;
@@ -125,11 +126,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (item.type.includes("-")) box.classList.add("minus");
 
-            box.innerHTML = `
-                <div>${item.type}</div>
-                <div>${item.time}</div>
-                <div>${item.date}</div>
-            `;
+            const type = document.createElement("div");
+            type.textContent = item.type;
+
+            const time = document.createElement("div");
+            time.textContent = item.time;
+
+            const date = document.createElement("div");
+            date.textContent = item.date;
+
+            box.appendChild(type);
+            box.appendChild(time);
+            box.appendChild(date);
             list.appendChild(box);
         });
     }

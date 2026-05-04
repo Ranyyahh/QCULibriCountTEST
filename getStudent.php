@@ -12,7 +12,6 @@ if (isset($_GET['studentNo']) && !empty($_GET['studentNo'])) {
 
     $studentNo = trim($_GET['studentNo']);
     
-    // Direct query - exact match
     $sql = "SELECT 
                 firstname, 
                 middlename, 
@@ -46,7 +45,7 @@ if (isset($_GET['studentNo']) && !empty($_GET['studentNo'])) {
         ];
         echo json_encode($student);
     } else {
-        // Subukan kung may kahit anong record sa table
+        
         $testSql = "SELECT COUNT(*) as total FROM students";
         $testResult = odbc_exec($conn, $testSql);
         $totalRecords = 0;

@@ -6,7 +6,7 @@ date_default_timezone_set('Asia/Manila');
 
 require_once 'config.php';
 
-$conn = getDBConnection();
+$conn = getDBConnection(false);
 
 if (!$conn) {
     echo json_encode(["success" => false, "activity" => [], "error" => "Connection failed"]);

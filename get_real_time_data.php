@@ -1,69 +1,105 @@
 <?php
+ini_set('display_errors', 0);
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "QCULibriCount";
+require_once 'config.php';
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+date_default_timezone_set('Asia/Manila');
 
-if ($conn->connect_error) {
-    die(json_encode(["error" => "Connection failed"]));
+$conn = getDBConnection(false);
+
+if (!$conn) {
+    echo json_encode([
+        'success' => false,
+        'current' => 0,
+        'max' => 50,
+        'percentage' => 0,
+        'activity' => [],
+        'error' => 'Connection failed'
+    ]);
+    exit;
 }
 
-// Get max capacity
+// ==============================
+// MAX CAPACITY
+// ==============================
 $maxCapacity = 50;
-$result = $conn->query("SELECT setting_value FROM system_settings WHERE setting_name = 'max_capacity'");
-if ($result && $result->num_rows > 0) {
-    $row = $result->fetch_assoc();
-    $maxCapacity = (int)$row['setting_value'];
+
+$sql = "SELECT setting_value 
+        FROM system_settings 
+        WHERE setting_name = 'max_capacity'";
+
+$result = odbc_exec($conn, $sql);
+
+if ($result && $row = odbc_fetch_array($result)) {
+    $maxCapacity = (int)$row['SETTING_VALUE'];
 }
 
-// Get current count
-$sql = "SELECT COUNT(*) as current_count FROM attendance_logs WHERE status = 'inside' AND time_out IS NULL";
-$result = $conn->query($sql);
-$row = $result->fetch_assoc();
-$currentCount = (int)$row['current_count'];
+// ==============================
+// CURRENT COUNT
+// ==============================
+$sql = "SELECT COUNT(*) AS current_count 
+        FROM attendance_logs 
+        WHERE status = 'inside' 
+        AND time_out IS NULL";
 
-// Calculate percentage
-$percentage = ($maxCapacity > 0) ? round(($currentCount / $maxCapacity) * 100) : 0;
+$result = odbc_exec($conn, $sql);
+$row = $result ? odbc_fetch_array($result) : false;
 
-// Get recent activity (last 12)
-$sql = "SELECT 
-            al.time_in,
-            al.time_out,
-            s.firstname,
-            s.lastname
-        FROM attendance_logs al
-        JOIN students s ON al.student_id = s.student_id
-        ORDER BY al.time_in DESC 
-        LIMIT 12";
-$result = $conn->query($sql);
+$currentCount = $row ? (int)$row['CURRENT_COUNT'] : 0;
+
+// ==============================
+// PERCENTAGE
+// ==============================
+$percentage = ($maxCapacity > 0) 
+    ? round(($currentCount / $maxCapacity) * 100) 
+    : 0;
+
+// ==============================
+// RECENT ACTIVITY
+// ==============================
+$sql = "
+SELECT * FROM (
+    SELECT 
+        CASE 
+            WHEN al.time_out IS NULL THEN '+1 Entry'
+            ELSE '-1 Entry'
+        END AS activity_type,
+        s.firstname || ' ' || SUBSTR(s.lastname, 1, 1) || '.' AS student_name,
+        CASE 
+            WHEN al.time_out IS NULL THEN TO_CHAR(al.time_in, 'HH:MI AM')
+            ELSE TO_CHAR(al.time_out, 'HH:MI AM')
+        END AS activity_time,
+        CASE 
+            WHEN al.time_out IS NULL THEN TO_CHAR(al.time_in, 'MM/DD/YY')
+            ELSE TO_CHAR(al.time_out, 'MM/DD/YY')
+        END AS activity_date
+    FROM attendance_logs al
+    JOIN students s ON al.student_id = s.student_id
+    ORDER BY al.time_in DESC
+)
+WHERE ROWNUM <= 12
+";
+
+$result = odbc_exec($conn, $sql);
+
 $activities = [];
 
-while($row = $result->fetch_assoc()) {
-    if ($row['time_out'] === null) {
-        // Entry
+if ($result) {
+    while ($row = odbc_fetch_array($result)) {
         $activities[] = [
-            'type' => '+1 Entry',
-            'student' => $row['firstname'] . ' ' . substr($row['lastname'], 0, 1) . '.',
-            'time' => date('h:i A', strtotime($row['time_in'])),
-            'date' => date('m/d/y', strtotime($row['time_in']))
-        ];
-    } else {
-        // Exit
-        $activities[] = [
-            'type' => '-1 Entry',
-            'student' => $row['firstname'] . ' ' . substr($row['lastname'], 0, 1) . '.',
-            'time' => date('h:i A', strtotime($row['time_out'])),
-            'date' => date('m/d/y', strtotime($row['time_out']))
+            'type' => $row['ACTIVITY_TYPE'],
+            'student' => $row['STUDENT_NAME'],
+            'time' => $row['ACTIVITY_TIME'],
+            'date' => $row['ACTIVITY_DATE']
         ];
     }
 }
 
-// Prepare response
+// ==============================
+// OUTPUT
+// ==============================
 echo json_encode([
     'success' => true,
     'current' => $currentCount,
@@ -73,5 +109,5 @@ echo json_encode([
     'timestamp' => date('Y-m-d H:i:s')
 ]);
 
-$conn->close();
+odbc_close($conn);
 ?>
