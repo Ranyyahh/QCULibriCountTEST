@@ -26,7 +26,7 @@
 }
 
 body {
-    background-color: #0038A8;
+    background-color: #e8edf2;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -41,7 +41,7 @@ body {
     width: 22px;
     height: 65%;
     top: 27%;
-    background-color: #ffffff;
+    background-color: #2c3947;
     z-index: 10;
 }
 
@@ -49,7 +49,7 @@ body {
 .white-bars.right {right: 0;}
 
 header {
-    background-color: #ffffff;
+    background-color: #2c3947;
     width: 100%;
     display: flex;
     align-items: center;
@@ -71,7 +71,7 @@ header {
 }
 
 .header-title h1 {
-    color: #0038A8;
+    color: #e8edf2;
     font-weight: 700;
     font-size: 3rem;
     text-align: center;
@@ -88,14 +88,14 @@ main {
 }
 
 .page-title1{
-    color: #ffffff;
+    color: #2c3947;
     font-weight: 700;
     font-size: 100px;
     margin-bottom: 10px;
     margin-top: 120px;
 }
 .page-title {
-    color: #ffffff;
+    color: #2c3947;
     font-weight: 700;
     font-size: 100px;
     margin-bottom: 30px;
@@ -103,7 +103,7 @@ main {
     text-align: center;
 }
 .page-title2{
-    color: #ffffff;
+    color: #547792;
     font-weight: 500;
     font-size: 30px;
     margin-bottom: 30px;
@@ -111,11 +111,11 @@ main {
     font-style: italic;
 }
 .form-container {
-    border: 1.5px solid #ffffff;
+    border: 1.5px solid #547792;
     border-radius: 20px;
     padding: 35px 50px;
     width: 100%;
-    background: rgba(255,255,255,0.05);
+    background: #e8edf2;
     margin-bottom: 15px;
     margin-top: 0px;
 }
@@ -127,7 +127,7 @@ main {
 }
 
 .form-group label {
-    color: #ffffff;
+    color: #2c3947;
     font-weight: 700;
     font-size: 1.3rem;
     width: 200px;
@@ -144,7 +144,8 @@ main {
     padding: 0 20px;
     font-size: 1.2rem;
     outline: none;
-    color: #333;
+    color: #2c3947;
+    background-color: #e8edf2;
 }
 
 .button-group {
@@ -159,17 +160,16 @@ button {
     border-radius: 999px;
     font-size: 1.5rem;
     font-weight: 700;
-    color: white;
+    color: #e8edf2;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
 .btn-time-in {
-    background-color: #008000;
+    background-color: #7da37d;
 }
 
 .btn-time-out {
-    background-color: #CC0000;
+    background-color: #de8383;
 }
 
 @media (max-width: 768px) {
