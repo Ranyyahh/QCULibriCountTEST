@@ -26,8 +26,8 @@
 body {
     margin: 0;
     font-family: "Poppins", sans-serif;
-    background: #02369C;
-    color: white;
+    background: #e8edf2;
+    color: #2c3947;
     overflow: hidden;
 }
 
@@ -38,8 +38,8 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 15px 20px;
-    background: white;
-    color: #02369C;
+    background: #2c3947;
+    color: #e8edf2;
     height: 60px;
     overflow: hidden;
     margin-top: 10px; /* OPTIONAL: remove if you don't want the gap */
@@ -81,7 +81,7 @@ font-weight: bold;
 
 display: inline-block;
 padding: 15px 55px;
-background-color: #777A8D;
+background-color: #547792;
 border-radius: 29px 29px 0 0;
 position: relative;
 margin-left: 10px;
@@ -97,7 +97,8 @@ box-shadow: 5px 0 5px -3px rgba(0,0,0,0.3);
 .Nav-bar li:nth-child(3) a { z-index: 1; }
 
 .Nav-bar a:hover {
-    background-color: #02369C;
+    background-color: #e8edf2;
+    color: #2c3947;
 }
 
 /* LOGS */
@@ -114,10 +115,11 @@ box-shadow: 5px 0 5px -3px rgba(0,0,0,0.3);
   padding: 30px;
   border: 3px solid white;
   border-radius: 30px;
-  max-height: 580px;
+  max-height: 80vh;
   display: flex;
   flex-direction: column;
   margin-top: 20px;
+  background: #547792;
 }
 
 .logs-title {
@@ -125,12 +127,15 @@ box-shadow: 5px 0 5px -3px rgba(0,0,0,0.3);
   font-size: 38px;
   margin-bottom: 10px;
   font-weight: bold;
+  color: #ffffff;
 }
 
 .logs-subtitle {
   text-align: center;
   margin-bottom: 30px;
   font-size: 16px;
+  color: #ffffff;
+  font-weight: bold;
 }
 
 .logs-scroll-area {
@@ -167,12 +172,11 @@ box-shadow: 5px 0 5px -3px rgba(0,0,0,0.3);
 
 .log-header {
   background: white;
-  color: #003F91;
+  color: #131416;
   text-align: center;
   font-weight: bold;
   padding: 18px;
   font-size: 22px;
-  border-bottom: 2px solid #003F91;
 }
 
 .log-cell {
@@ -181,14 +185,15 @@ box-shadow: 5px 0 5px -3px rgba(0,0,0,0.3);
   text-align: center;
   border-bottom: 1px solid white;
   border-right: 1px solid white;
+  color: #ffffff;
 }
 
 .log-cell:last-child {
   border-right: none;
 }
 
-.row-blue { background: #0a3c87; }
-.row-red { background: #b80000; }
+.row-blue { background: #215d80; }
+.row-red { background: #d35a5a; }
 
 .log-cell:hover {
   background-color: rgba(255, 255, 255, 0.2);
@@ -197,14 +202,14 @@ box-shadow: 5px 0 5px -3px rgba(0,0,0,0.3);
 }
 
 .Nav-bar li a.active {
-    background-color: #02369C !important;
-    color: white !important;
+    background-color: #e8edf2 !important;
+    color: #2c3947 !important;
     font-weight: bold !important;
 }
 
 .Nav-bar li:nth-child(2) a {
-    background-color: #02369C !important;
-    color: white !important;
+    background-color: #e8edf2 !important;
+    color: #2c3947 !important;
     font-weight: bold !important;
   
 }

@@ -11,8 +11,8 @@
 
 /* Body background color */
 body {
-    background: #003d99;
-    color: #fff;
+    background: #e8edf2;
+    color: #2c3947;
     text-align: center;
     overflow: hidden;
 }
@@ -23,14 +23,14 @@ body {
 
 /* Main header container */
 header {
-    background-color: #ffffff;
+    background-color: #2c3947;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 100px;
     padding: 10px 40px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    border-bottom: 1px solid #547792;
     position: relative;
     z-index: 2;
     margin-top: 20px;
@@ -47,7 +47,7 @@ header {
 }
 
 .header-title h1 {
-    color: #0038A8;
+    color: #e8edf2;
     font-weight: 700;
     font-size: 3rem;
     text-align: center;
@@ -57,13 +57,13 @@ header {
    DATE / TIME BAR
    ================================= */
 .datetime-wrapper .bar1 {
-    width: 1%;
-    height: 30px;
-    background: #ffffff;
+    width: 30%;
+    height: 1px;
+    background: #547792;
 }
 
 .datetime-section {
-    background: #003d99 ;
+    background: #e8edf2;
     padding: 20px;
 }
 
@@ -76,14 +76,14 @@ header {
 .datetime-wrapper h2 {
     font-size: 26px;
     font-weight: 600; /* Semi-bold */
-    color: white;
+    color: #547792;
     max-width: 70%;
 }
 
 .datetime-wrapper .bar {
-    width: 65%;
-    height: 30px;
-    background: #1a75ff;
+    width: 30%;
+    height: 1px;
+    background: #547792;
     border-radius: 2px;
 }
 
@@ -101,11 +101,12 @@ header {
 
 /* White cards */
 .card {
-    background: white;
+    background: #547792;
     width: 700px;
     padding: 1px;
     border-radius: 30px;
-    color: #000;
+    color: #e8edf2;
+    border: 1px solid #f3f4f8;
 }
 
 .card h3 {
@@ -114,6 +115,7 @@ header {
     margin-bottom: 25px;
     margin-left: 20px;
     text-align: left;
+    color: #e8edf2;
 }
 
 /* =================================
@@ -141,13 +143,13 @@ header {
 
 .gauge .bg {
     fill: none;
-    stroke: #f3f4f8;
+    stroke: #e8edf2;
     stroke-width: 3.5;
 }
 
 .gauge .meter {
     fill: none;
-    stroke: #1ab34a;
+    stroke: #7da37d;
     stroke-width: 4;
     stroke-linecap: round;
     transform: rotate(0deg);
@@ -158,6 +160,7 @@ header {
     top: 87%;
     left: 125px;
     transform: translate(-50%, -50%);
+    color: #7da37d;
 }
 
 .gauge-center-text .status {
@@ -169,14 +172,14 @@ header {
 .gauge-text .percent {
     font-size: 100px;
     font-weight: 800; /* Bold */
-    color: #1ab34a;
+    color: #7da37d;
     margin-top: 10px;
 }
 
 .gauge-text .indicator {
     position: absolute;
     font-size: 25px;
-    color: #131416;
+    color: #e8edf2;
     font-weight: 800; /* Regular */
     bottom: 250px;
     left: 485px;
@@ -188,7 +191,7 @@ header {
     left: 125px;
     width: 165px;  /* adjust size of inner circle */
     height: 165px;
-    background-color: #f3f4f8;
+    background-color: #e8edf2;
     border-radius: 50%;
     transform: translate(-50%, -50%);
 }
@@ -204,7 +207,7 @@ header {
 .icon-person .head {
     width: 80px;
     height: 80px;
-    background: #4CAF50;
+    background: #7da37d;
     border-radius: 50%;
     margin: 0 auto;
 }
@@ -212,7 +215,7 @@ header {
 .icon-person .body {
     width: 160px;
     height: 80px;
-    background: #4CAF50;
+    background: #7da37d;
     border-radius: 100% 100% 5% 5%;
     margin: 15px auto;
 }
@@ -220,11 +223,11 @@ header {
 .count {
     font-size: 68px;
     font-weight: 700; /* Bold */
-    color: #0046b3;
+    color: #e8edf2;
 }
 
 footer {
-    color: #cce0ff;
+    color: #547792;
     margin-bottom: 10px;
     font-size: 20px;
     font-weight: 400; /* Regular */
@@ -233,5 +236,5 @@ footer {
 .title {
     font-size: 38px;
     font-weight: 700;
-    color: #131416; /* or whatever color you want */
+    color: #2c3947;
 }

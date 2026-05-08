@@ -98,13 +98,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (percent <= 50) {
             status.textContent = "NORMAL";
-            color = "#4ca626";
+            color = "#7da37d";
         } else if (percent > 50 && percent < 90) {
             status.textContent = "NEAR FULL";
-            color = "#f5bb13";
+            color = "#eec857";
         } else {
             status.textContent = "FULL";
-            color = "#b30000";
+            color = "#ca5353";
         }
 
         // Apply color

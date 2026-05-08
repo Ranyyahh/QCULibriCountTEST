@@ -24,15 +24,15 @@ function updateGauge(percent, current, max) {
     /* STATUS LOGIC */
     if (percent <= 50) {
         statusText.textContent = "NORMAL";
-        color = "#4ca626";  // green
+        color = "#7da37d";  // green
     }
     else if (percent > 50 && percent < 90) {
         statusText.textContent = "NEAR FULL";
-        color = "#f5bb13";  // yellow
+        color = "#eec857";  // yellow
     }
     else {
         statusText.textContent = "FULL";
-        color = "#b30000";  // red
+        color = "#ca5353";  // red
     }
 
     // Apply color to all elements
